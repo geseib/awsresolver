@@ -1,0 +1,57 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "DNS PRivate Zone Example"
+
+Metadata:
+  "AWS::CloudFormation::Interface":
+    ParameterGroups:
+      - Label:
+          default: "DNS Zone Info"
+        Parameters:
+          - Zone
+          - VPCName
+          - ServerName
+          - ServerIP
+
+Parameters:
+  ServerIP:
+    Description: "Stack name of parent VPC stack."
+    Type: String
+    Default: "192.168.168.168"
+
+  ServerName:
+    Description: "Fake Server Host Name."
+    Type: String
+    Default: "www"
+
+  Zone:
+    Description: "Stack name of parent VPC stack."
+    Type: String
+    Default: "test.internal"
+
+  VPCName:
+    Description: "Stack name of parent VPC stack."
+    Type: String
+    Default: "dnsdemo"
+
+Resources:
+  DNSZone:
+    Type: "AWS::Route53::HostedZone"
+    Properties:
+      HostedZoneConfig:
+        Comment: "My hosted zone for the Zone"
+      Name: !Ref "Zone"
+      VPCs:
+        - VPCId:
+            Fn::ImportValue: !Sub "${VPCName}-VPC"
+          VPCRegion: !Ref "AWS::Region"
+
+  myDNSRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: !Ref "DNSZone"
+      Comment: DNS name for my instance.
+      Name: !Join ["", [ServerName, ., !Ref "Zone", .]]
+      Type: A
+      TTL: "600"
+      ResourceRecords:
+        - !Ref "ServerIP"

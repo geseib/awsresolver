@@ -1,0 +1,105 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  VPCName:
+    Description: "Stack name of parent VPC stack."
+    Type: String
+
+Resources:
+  ResolverSecGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Open-up ports for bind
+      GroupName: !Join ["-", [Ref: "AWS::StackName", "dns-sec-group"]]
+      VpcId:
+        "Fn::ImportValue": !Sub "${VPCName}-VPC"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: "53"
+          ToPort: "53"
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: udp
+          FromPort: "53"
+          ToPort: "53"
+          CidrIp: 0.0.0.0/0
+
+  DNSOutboundEndpoint:
+    Type: "AWS::Route53Resolver::ResolverEndpoint"
+    Properties:
+      Direction: "outbound"
+      IpAddresses:
+        - SubnetId:
+            "Fn::ImportValue": !Sub "${VPCName}-PrivateSubnetA"
+        - SubnetId:
+            "Fn::ImportValue": !Sub "${VPCName}-PrivateSubnetB"
+      Name: !Join ["-", [Ref: "AWS::StackName", "endpoint"]]
+      SecurityGroupIds:
+        - !Ref ResolverSecGroup
+
+  DNSInboundEndpoint:
+    Type: "AWS::Route53Resolver::ResolverEndpoint"
+    Properties:
+      Direction: "inbound"
+      IpAddresses:
+        - SubnetId:
+            "Fn::ImportValue": !Sub "${VPCName}-PrivateSubnetA"
+        - SubnetId:
+            "Fn::ImportValue": !Sub "${VPCName}-PrivateSubnetB"
+      Name: !Join ["-", [Ref: "AWS::StackName", "endpoint"]]
+      SecurityGroupIds:
+        - !Ref ResolverSecGroup
+
+  DNSRule1:
+    Type: "AWS::Route53Resolver::ResolverRule"
+    Properties:
+      DomainName: "."
+      Name: !Join ["-", [Ref: "AWS::StackName", "wildcard"]]
+      ResolverEndpointId: !GetAtt DNSOutboundEndpoint.ResolverEndpointId
+      RuleType: "FORWARD"
+      TargetIps:
+        - Ip:
+            "Fn::ImportValue": !Sub "${VPCName}-nameServerIP"
+          Port: "53"
+
+  DNSRule2:
+    Type: "AWS::Route53Resolver::ResolverRule"
+    Properties:
+      DomainName: "amazonaws.com"
+      Name: !Join ["-", [Ref: "AWS::StackName", "amazon"]]
+      RuleType: "SYSTEM"
+
+  DNSRule3:
+    Type: "AWS::Route53Resolver::ResolverRule"
+    Properties:
+      DomainName: "aws.seibtribe.com"
+      Name: !Join ["-", [Ref: "AWS::StackName", "seibtribe"]]
+      RuleType: "SYSTEM"
+
+Outputs:
+  Rule1:
+    Description: rule 1 associate command
+    Value:
+      Fn::Join:
+        - " "
+        - - "aws route53resolver associate-resolver-rule --resolver-rule-id"
+          - !GetAtt DNSRule1.ResolverRuleId
+          - "--vpc-id"
+          - Fn::ImportValue: !Sub ${VPCName}-VPC
+  Rule2:
+    Description: rule 2 associate command
+    Value:
+      Fn::Join:
+        - " "
+        - - "aws route53resolver associate-resolver-rule --resolver-rule-id"
+          - !GetAtt DNSRule2.ResolverRuleId
+          - "--vpc-id"
+          - Fn::ImportValue: !Sub ${VPCName}-VPC
+
+  Rule3:
+    Description: rule 3 associate command
+    Value:
+      Fn::Join:
+        - " "
+        - - "aws route53resolver associate-resolver-rule --resolver-rule-id"
+          - !GetAtt DNSRule3.ResolverRuleId
+          - "--vpc-id"
+          - Fn::ImportValue: !Sub ${VPCName}-VPC
