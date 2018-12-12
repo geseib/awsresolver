@@ -14,6 +14,8 @@ You can configure Resolver to forward queries that it receives from EC2 instance
 
 Like Amazon VPC, Resolver is regional. In each region where you have VPCs, you can choose whether to forward queries from your VPCs to your network (outbound queries), from your network to your VPCs (inbound queries), or both.
 
+![Speficy Details Screenshot](../images/AWSResolverBlog.png)
+
 ## Implementation Instructions
 
 Each of the following sections provides an implementation overview and detailed, step-by-step instructions. The overview should provide enough context for you to complete the implementation if you're already familiar with the AWS Management Console or you want to explore the services yourself without following a walkthrough.
