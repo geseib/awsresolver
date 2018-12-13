@@ -14,6 +14,16 @@ You can configure Resolver to forward queries that it receives from EC2 instance
 
 Like Amazon VPC, Resolver is regional. In each region where you have VPCs, you can choose whether to forward queries from your VPCs to your network (outbound queries), from your network to your VPCs (inbound queries), or both.
 
+## Practical Example
+
+Ideally we want to manage the cloud native environment in the cloud and not rely on changes on prem. However, we also find hybrid is nessasary. We may need to access systems on-prem and vice-versa without making our private DNS zones exposed on the internet. to do both be need to first define the rule of what is handled by the AWS resolver and what we want the resolver to pass on to other DNS systems.
+
+In this use case I want to define these three rule:
+
+1. **.awsamazon.com -> SYSTEM**. Any local VPC request to and hosts in the awsamazon.com domain, I want resolved by the local .2 resolver. This is especially helpful if I use a feature called privatelink that lets me specify endpoints in my local VPC for those services using the services public DNS names. AMazon Key Management System (KMS) is one service that could be used with Privatelink.
+
+1. **.test.local -> SYSTEM**, I want to create a private DNS Zone in AWS Route53 for internal resolution.
+
 ![Speficy Details Screenshot](./images/AWSResolverBlog.png)
 
 ## Implementation Instructions
@@ -53,6 +63,7 @@ AWS Resolver
 ### Standard DNS operations
 
 Let's take a look at how EC2 operated normally
+![VPC Resolver Diagram](../images/systemresolve.png)
 
 1. Look at VPC DHCP configuration
 
@@ -127,3 +138,7 @@ Let's take a look at how EC2 operated normally
 1. Verify the Wild Rydes home page is loading properly and move on to the next module, [User Management](../2_UserManagement).
 
 </p></details>
+
+![VPC Resolver Diagram](./images/forwardresolve.png)
+
+![VPC Resolver Diagram](./images/inboundresolve.png)
